@@ -1,0 +1,2 @@
+tests/set_sregs_test
+tests/vmx_tsc_adjust_test

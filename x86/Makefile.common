@@ -33,7 +33,7 @@ KEEP_FRAME_POINTER := y
 
 libgcc := $(shell $(CC) -m$(bits) --print-libgcc-file-name)
 
-# We want to keep intermediate file: %.elf and %.o 
+# We want to keep intermediate file: %.elf and %.o
 .PRECIOUS: %.elf %.o
 
 FLATLIBS = lib/libcflat.a $(libgcc)
@@ -61,7 +61,18 @@ tests-api = api/api-sample api/dirty-log api/dirty-log-perf
 OBJDIRS += api
 endif
 
-test_cases: $(tests-common) $(tests) $(tests-api)
+GTEST_DIR = gtests/tests
+GTEST_LIBDIR = gtests/lib
+GTEST_INCDIR = gtests/include
+
+ifdef GTESTS
+tests-gtests = $(GTEST_DIR)/set_sregs_test $(GTEST_DIR)/vmx_tsc_adjust_test
+
+OBJDIRS += gtests/lib
+OBJDIRS += gtests/tests
+endif
+
+test_cases: $(tests-common) $(tests) $(tests-api) $(tests-gtests)
 
 $(TEST_DIR)/%.o: CFLAGS += -std=gnu99 -ffreestanding -I $(SRCDIR)/lib -I $(SRCDIR)/lib/x86 -I lib
 
@@ -81,7 +92,9 @@ $(TEST_DIR)/hyperv_connections.elf: $(TEST_DIR)/hyperv.o
 arch_clean:
 	$(RM) $(TEST_DIR)/*.o $(TEST_DIR)/*.flat $(TEST_DIR)/*.elf \
 	$(TEST_DIR)/.*.d lib/x86/.*.d \
-	$(tests-api) api/*.o api/*.a api/.*.d
+	$(tests-api) api/*.o api/*.a api/.*.d \
+	$(tests-gtests) $(GTEST_DIR)/*.o $(GTEST_DIR)/.*.d \
+	$(GTEST_LIBDIR)/*.o $(GTEST_LIBDIR)/*.a $(GTEST_LIBDIR)/.*.d
 
 api/%.o: CXXFLAGS += -m32 -std=gnu++11
 
@@ -92,3 +105,15 @@ api/libapi.a: api/kvmxx.o api/identity.o api/exception.o api/memmap.o
 	$(AR) rcs $@ $^
 
 $(tests-api) : % : %.o api/libapi.a
+
+$(GTEST_LIBDIR)/%.o: CFLAGS += -std=gnu99 -I $(GTEST_INCDIR) \
+	-I $(KERNEL)/usr/include
+
+$(GTEST_LIBDIR)/libgtests.a: $(GTEST_LIBDIR)/kvm_util.o $(GTEST_LIBDIR)/test_util.o \
+	$(GTEST_LIBDIR)/test_sparsebit.o
+	$(AR) rcs $@ $^
+
+$(GTEST_DIR)/%.o: CFLAGS += -std=gnu99 -I $(GTEST_INCDIR) -I $(KERNEL)/usr/include
+
+$(tests-gtests) : % : %.o $(GTEST_LIBDIR)/libgtests.a
+	$(CC) -static -o $@ $^ -lm
