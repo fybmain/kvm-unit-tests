@@ -23,14 +23,11 @@
 #include <linux/fs.h>
 #include <linux/elf.h>
 
-#include "asm/processor-flags.h"
-#include "asm/msr.h"
-#include "asm/msr-index.h"
-
 #include "test_sparsebit.h"
 #include "test_util.h"
 
 #include "kvm_util.h"
+#include "x86.h"
 
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
 

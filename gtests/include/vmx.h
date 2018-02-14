@@ -10,7 +10,6 @@
 #ifndef GTESTS_KVM_VMX_H
 #define GTESTS_KVM_VMX_H
 
-#include <asm/msr-index.h>
 #include <stdint.h>
 #include "x86.h"
 
